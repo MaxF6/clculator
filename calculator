@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booth Cost Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-6 max-w-2xl">
+        <h1 class="text-2xl font-bold mb-6 text-center">Booth Cost Calculator</h1>
+        
+        <!-- Input Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <div class="grid grid-cols-1 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Total Software Subscription Cost ($)</label>
+                    <input type="number" id="subscriptionCost" min="0" step="0.01" class="mt-1 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 10000">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Number of Total Events</label>
+                    <input type="number" id="totalEvents" min="1" step="1" class="mt-1 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 10">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Average Number of Booths per Event</label>
+                    <input type="number" id="boothsPerEvent" min="1" step="1" class="mt-1 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 50">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Processing Fee (%)</label>
+                    <input type="number" id="processingFee" min="0" max="100" step="0.01" class="mt-1 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 2.5">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Average Per Booth Cost ($)</label>
+                    <input type="number" id="avgBoothCost" min="0" step="0.01" class="mt-1 p-2 w-full border rounded-md focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 100">
+                </div>
+            </div>
+            <button onclick="calculateCosts()" class="mt-4 w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700">Calculate</button>
+            <p id="errorMessage" class="mt-2 text-red-600 hidden text-sm"></p>
+        </div>
+
+        <!-- Results -->
+        <div id="results" class="bg-white p-6 rounded-lg shadow-md hidden">
+            <h2 class="text-xl font-semibold mb-4">Results</h2>
+            <div id="mapDResult" class="mb-4">
+                <h3 class="text-lg font-medium">MapD Cost per Booth</h3>
+                <p id="mapDCost" class="text-gray-700">$0.00</p>
+            </div>
+            <div id="competitorNoFeeResult" class="mb-4">
+                <h3 class="text-lg font-medium">Competitor Cost per Booth (No Processing Fee)</h3>
+                <p id="competitorNoFeeCost" class="text-gray-700">$0.00</p>
+            </div>
+            <div id="competitorWithFeeResult" class="mb-4">
+                <h3 class="text-lg font-medium">Competitor Cost per Booth (With Processing Fee)</h3>
+                <p id="subFeePerBooth" class="text-gray-700">Subscription Fee per Booth: $0.00</p>
+                <p id="processingFeePerBooth" class="text-gray-700">Processing Fee per Booth: $0.00</p>
+                <p id="totalCompetitorWithFeeCost" class="text-gray-700 font-bold">Total Cost per Booth: $0.00</p>
+            </div>
+            <div id="totalCompetitorCostResult">
+                <h3 class="text-lg font-medium">Total Competitor Cost (With Processing Fee)</h3>
+                <p id="totalCompetitorCost" class="text-gray-700">$0.00</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateCosts() {
+            // Get input elements
+            const subscriptionCostInput = document.getElementById('subscriptionCost');
+            const totalEventsInput = document.getElementById('totalEvents');
+            const boothsPerEventInput = document.getElementById('boothsPerEvent');
+            const processingFeeInput = document.getElementById('processingFee');
+            const avgBoothCostInput = document.getElementById('avgBoothCost');
+            const errorMessage = document.getElementById('errorMessage');
+            const results = document.getElementById('results');
+
+            // Reset previous error states
+            errorMessage.classList.add('hidden');
+            [subscriptionCostInput, totalEventsInput, boothsPerEventInput, processingFeeInput, avgBoothCostInput]
+                .forEach(input => input.classList.remove('border-red-500'));
+
+            // Get input values
+            const subscriptionCost = parseFloat(subscriptionCostInput.value);
+            const totalEvents = parseInt(totalEventsInput.value);
+            const boothsPerEvent = parseInt(boothsPerEventInput.value);
+            const processingFee = parseFloat(processingFeeInput.value);
+            const avgBoothCost = parseFloat(avgBoothCostInput.value);
+
+            // Validation
+            let errors = [];
+            if (isNaN(subscriptionCost) || subscriptionCost < 0) {
+                errors.push("Total Software Subscription Cost must be a non-negative number.");
+                subscriptionCostInput.classList.add('border-red-500');
+            }
+            if (isNaN(totalEvents) || totalEvents <= 0) {
+                errors.push("Number of Total Events must be a positive number.");
+                totalEventsInput.classList.add('border-red-500');
+            }
+            if (isNaN(boothsPerEvent) || boothsPerEvent <= 0) {
+                errors.push("Average Number of Booths per Event must be a positive number.");
+                boothsPerEventInput.classList.add('border-red-500');
+            }
+            if (isNaN(processingFee) || processingFee < 0 || processingFee > 100) {
+                errors.push("Processing Fee must be between 0 and 100.");
+                processingFeeInput.classList.add('border-red-500');
+            }
+            if (isNaN(avgBoothCost) || avgBoothCost < 0) {
+                errors.push("Average Per Booth Cost must be a non-negative number.");
+                avgBoothCostInput.classList.add('border-red-500');
+            }
+
+            // Display errors if any
+            if (errors.length > 0) {
+                errorMessage.textContent = errors.join(" ");
+                errorMessage.classList.remove('hidden');
+                results.classList.add('hidden');
+                return;
+            }
+
+            // Calculate total booths
+            const totalBooths = totalEvents * boothsPerEvent;
+
+            // MapD Cost per Booth
+            const mapDCost = totalBooths > 0 ? (subscriptionCost / totalBooths).toFixed(2) : '0.00';
+
+            // Competitor Cost per Booth (No Processing Fee)
+            const competitorNoFeeCost = totalBooths > 0 ? (subscriptionCost / totalBooths).toFixed(2) : '0.00';
+
+            // Competitor Cost per Booth (With Processing Fee)
+            const processingFeePerBooth = totalBooths > 0 ? ((avgBoothCost * totalBooths * (processingFee / 100)) / totalBooths).toFixed(2) : '0.00';
+            const subFeePerBooth = totalBooths > 0 ? (subscriptionCost / totalBooths).toFixed(2) : '0.00';
+            const totalCompetitorWithFeeCost = (parseFloat(subFeePerBooth) + parseFloat(processingFeePerBooth)).toFixed(2);
+
+            // Total Competitor Cost (With Processing Fee)
+            const totalCompetitorCost = (totalBooths * parseFloat(totalCompetitorWithFeeCost)).toFixed(2);
+
+            // Display results
+            document.getElementById('mapDCost').textContent = `$${mapDCost}`;
+            document.getElementById('competitorNoFeeCost').textContent = `$${competitorNoFeeCost}`;
+            document.getElementById('subFeePerBooth').textContent = `Subscription Fee per Booth: $${subFeePerBooth}`;
+            document.getElementById('processingFeePerBooth').textContent = `Processing Fee per Booth: $${processingFeePerBooth}`;
+            document.getElementById('totalCompetitorWithFeeCost').textContent = `Total Cost per Booth: $${totalCompetitorWithFeeCost}`;
+            document.getElementById('totalCompetitorCost').textContent = `$${totalCompetitorCost}`;
+
+            // Show results
+            results.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
